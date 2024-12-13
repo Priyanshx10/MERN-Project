@@ -2,25 +2,27 @@ import React, { useState, useContext } from "react";
 import { useHistory } from "react-router-dom";
 import axios from "axios";
 import { AuthContext } from "../contexts/AuthContext";
+import useApi from "../hooks/useApi";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login } = useContext(AuthContext);
   const history = useHistory();
+  const { request, error, loading } = useApi();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        { email, password }
-      );
-      login(response.data);
+      const data = await request({
+        method: "POST",
+        url: "http://localhost:5000/api/auth/login",
+        data: { email, password },
+      });
+      login(data);
       history.push("/");
     } catch (error) {
       console.error("Login error:", error);
-      // TODO: Add error handling, e.g., display error message to user
     }
   };
 
@@ -54,11 +56,13 @@ const Login = () => {
             className="w-full px-3 py-2 border rounded"
           />
         </div>
+        {error && <p className="text-red-500 mb-4">{error}</p>}
         <button
           type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
+          disabled={loading}
         >
-          Login
+          {loading ? "Logging in..." : "Login"}
         </button>
       </form>
     </div>
