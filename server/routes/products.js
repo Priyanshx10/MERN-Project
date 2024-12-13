@@ -5,12 +5,35 @@ import { authMiddleware, isAdmin } from "../middleware/auth.js";
 const router = express.Router();
 
 // Get all products
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
   try {
-    const products = await Product.find();
-    res.json(products);
+    const { page = 1, limit = 10, search, category } = req.query;
+    const query = {};
+
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    if (category) {
+      query.category = category;
+    }
+
+    const total = await Product.countDocuments(query);
+    const products = await Product.find(query)
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .exec();
+
+    res.json({
+      products,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+    });
   } catch (error) {
-    res.status(500).json({ error: "Error fetching products" });
+    next(error);
   }
 });
 
